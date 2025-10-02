@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { editTask, generatePlan, readPlan } from './planner.js';
+import { editTask, generatePlan, readPlan, savePlan } from './planner.js';
+import inquirer from 'inquirer';
 
 const program = new Command();
 
@@ -45,10 +46,54 @@ program
   .action((taskIdStr, newDescription)=>{
     const taskId = parseInt(taskIdStr, 10);
     if (isNaN(taskId)){
-        console.error(chalk.red('❌ Task ID must be a number.'));
+        console.error(chalk.red('❌ Task ID must be a number!'));
         return;
     }
     editTask(taskId, newDescription);
+  });
+
+// Edit tasks for a plan in interactive mode
+program
+  .command('edit-interactive')
+  .description('Edit task in interactive mode')
+  .action(async () => {
+    const plan = readPlan();
+    if (!plan){
+      console.error(chalk.red('❌ Error reading plan!'));
+      return;
+    }
+
+    const choices = plan.tasks.map(task => ({
+      name  : `[${task.id}] ${task.description}`,
+      value : task.id 
+    }));
+
+    const { taskId } = await inquirer.prompt<{ taskId : number }>(
+      {
+        type : 'list',
+        name : 'taskId',
+        message : 'Select a task to edit - ',
+        choices
+      }
+    );
+
+    const { newDescription } = await inquirer.prompt<{ newDescription : string }>([{
+      type : 'input',
+      name : 'newDescription',
+      message : 'Enter new description for the task: ',
+      validate : (input) => input.trim() === '' ? 'Description cannot be empty' : true , 
+      default : plan.tasks.find(t => t.id === taskId)?.description ?? ''
+    }]);
+
+    const task = plan.tasks.find(t => t.id === taskId);
+    if (!task) {
+      console.error(chalk.red(`❌ Task with ID ${taskId} not found.`));
+      return;
+    }
+
+    task.description = newDescription.trim();
+    savePlan(plan);
+
   });
 
 program.parse(process.argv);
