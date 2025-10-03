@@ -39,6 +39,12 @@ Clone the repo and install dependencies:
 3. npm install
 4. Add .env file for environment variables - HF_TOKEN (LLM API key) and PLAN_FILE (output file destination)
 
+For global package installation follow the additional steps below:
+
+1. npm run build
+2. npm install -g .
+
+
 
 
 ## Usage
